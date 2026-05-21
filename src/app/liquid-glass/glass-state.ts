@@ -25,5 +25,5 @@ export const DEFAULT_STATE: GlassState = {
   blur: 1.5,
   spec: 0.55,
   tint: 0.08,
-  shadow: 0.5,
+  shadow: 0.1,
 };

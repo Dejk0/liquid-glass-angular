@@ -43,18 +43,19 @@ export class LiquidGlassComponent implements AfterViewInit, OnDestroy, OnChanges
   syncFromDom(): void {
     if (!this.glassElRef || !this.material) return;
     const rect = this.glassElRef.nativeElement.getBoundingClientRect();
+    const style = getComputedStyle(this.glassElRef.nativeElement);
     const u = this.material.uniforms;
     u['uResolution'].value.set(window.innerWidth, window.innerHeight);
     u['uGlassCenter'].value.set(rect.left + rect.width / 2, rect.top + rect.height / 2);
     u['uGlassSize'].value.set(rect.width, rect.height);
-    u['uRadius'].value    = this.state.gr;
+    u['uRadius'].value    =  parseFloat(style.borderRadius) || this.state.gr;
     u['uBezel'].value     = this.state.bezel;
     u['uThickness'].value = this.state.thick;
     u['uIOR'].value       = this.state.ior;
     u['uBlur'].value      = this.state.blur;
     u['uSpecular'].value  = this.state.spec;
     u['uTint'].value      = this.state.tint;
-    u['uShadow'].value    = this.state.shadow;
+    u['uShadow'].value    = parseFloat(style.boxShadow.split(' ')[3]) || this.state.shadow;
   }
 }
 
