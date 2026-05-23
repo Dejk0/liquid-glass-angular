@@ -1,6 +1,5 @@
 .glassEl {
   position: relative;
-  z-index: 2;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -25,11 +24,12 @@
   align-items: center;
 }
 .backdiv {
-  position: absolute;
-  z-index: 1;
-  top: 100px;
+  position: fixed;
+  z-index: 0;
+  top: 200px;
   left: 400px;
   width: 400px;
   height: 400px;
-  background: linear-gradient(135deg, #193fe9, #a59cad);
+  background: url('./pexels-peaky-31177056.jpg') no-repeat center center;
+  background-size: cover;
 }
