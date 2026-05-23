@@ -117,7 +117,7 @@ export class GlassRendererService {
     const vpW = window.innerWidth;
     const vpH = window.innerHeight;
 
-    html2canvas(document.body, {
+    html2canvas(document.documentElement, {
       useCORS: true,
       allowTaint: false,
       ignoreElements: (el: Element) =>
