@@ -25,7 +25,6 @@
 }
 .draggable-el {
   position: fixed;
-  z-index: 0;
   padding: 16px 24px;
   background: rgba(21, 3, 3, 0.85);
   border: 1px solid rgba(255, 255, 255, 0.3);
@@ -39,6 +38,12 @@
   &:active {
     cursor: grabbing;
   }
+}
+.front{
+  z-index: 6;
+}
+.back{
+  z-index: 0;
 }
 
 .backdiv {

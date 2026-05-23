@@ -15,10 +15,14 @@ export class AppComponent implements AfterViewInit, OnDestroy {
 
   readonly defaultBgUrl = 'https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?q=80&w=2000&auto=format&fit=crop';
 
-  dragX = 50;
-  dragY = 50;
+  dragXfront = 50;
+  dragYfront = 50;
+  dragXback = 50;
+  dragYback = 50;
 
   private isDragging = false;
+  private isDraggingFront = false;
+  private isDraggingBack = false;
   private offsetX = 0;
   private offsetY = 0;
 
@@ -32,24 +36,38 @@ export class AppComponent implements AfterViewInit, OnDestroy {
     this.isDragging = false;
   }
 
-  onDragStart(event: MouseEvent): void {
+  onDragStart(event: MouseEvent, type: 'front' | 'back'): void {
     this.isDragging = true;
-    this.offsetX = event.clientX - this.dragX;
-    this.offsetY = event.clientY - this.dragY;
+    if (type === 'front') {
+      this.isDraggingFront = true;
+      this.offsetX = event.clientX - this.dragXfront;
+      this.offsetY = event.clientY - this.dragYfront;
+    } else {
+      this.isDraggingBack = true;
+      this.offsetX = event.clientX - this.dragXback;
+      this.offsetY = event.clientY - this.dragYback;
+    }
     event.preventDefault();
   }
 
   @HostListener('document:mousemove', ['$event'])
   onMouseMove(event: MouseEvent): void {
     if (!this.isDragging) return;
-    this.dragX = event.clientX - this.offsetX;
-    this.dragY = event.clientY - this.offsetY;
+    if (this.isDraggingFront) {
+      this.dragXfront = event.clientX - this.offsetX;
+      this.dragYfront = event.clientY - this.offsetY;
+    } else if (this.isDraggingBack) {
+      this.dragXback = event.clientX - this.offsetX;
+      this.dragYback = event.clientY - this.offsetY;
+    }
   }
 
   @HostListener('document:mouseup')
   onMouseUp(): void {
     if (this.isDragging) {
       this.isDragging = false;
+      this.isDraggingFront = false;
+      this.isDraggingBack = false;
       this.glassRenderer.captureBackground();
     }
   }

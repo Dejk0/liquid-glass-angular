@@ -1,14 +1,21 @@
 
 <div #bg id="bg"></div>
 <canvas #canvas id="gl"></canvas>
-<div class="backdiv"> </div>
+<!-- <div class="backdiv"> </div> -->
 
 <div
-    class="draggable-el"
-    [style.left.px]="dragX"
-    [style.top.px]="dragY"
-    (mousedown)="onDragStart($event)">
-    mozgatható elem
+    class="draggable-el front"
+    [style.left.px]="dragXfront"
+    [style.top.px]="dragYfront"
+    (mousedown)="onDragStart($event, 'front')">
+    draggable component front
+</div>
+<div
+    class="draggable-el back"
+    [style.left.px]="dragXback"
+    [style.top.px]="dragYback"
+    (mousedown)="onDragStart($event, 'back')">
+    draggable component back
 </div>
 <div class="wrapper">
     <app-liquid-glass [state]="state">
