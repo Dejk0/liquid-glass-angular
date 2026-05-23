@@ -15,6 +15,8 @@ uniform float uTint;
 uniform float uShadow;
 uniform sampler2D uBgTex;
 uniform float uBgAspect;
+uniform vec4 uBgRect;
+uniform float uRotation;
 
 float sdRoundedRect(vec2 p, vec2 halfSize, float r) {
   vec2 q = abs(p) - halfSize + r;
@@ -26,24 +28,26 @@ float surfaceHeight(float t) {
   return pow(1.0 - s*s*s*s, 0.25);
 }
 
-vec3 sampleBg(vec2 screenUV) {
-  float screenAspect = uResolution.x / uResolution.y;
-  vec2 uv = screenUV;
-  if (uBgAspect > screenAspect) {
-    float s = screenAspect / uBgAspect;
+vec3 sampleBg(vec2 screenPx) {
+  vec2 rectOrigin = uBgRect.xy;
+  vec2 rectSize = max(uBgRect.zw, vec2(1.0));
+  float rectAspect = rectSize.x / rectSize.y;
+
+  vec2 uv = (screenPx - rectOrigin) / rectSize;
+  if (uBgAspect > rectAspect) {
+    float s = rectAspect / uBgAspect;
     uv.x = uv.x * s + (1.0 - s) * 0.5;
   } else {
-    float s = uBgAspect / screenAspect;
+    float s = uBgAspect / rectAspect;
     uv.y = uv.y * s + (1.0 - s) * 0.5;
   }
   uv.y = 1.0 - uv.y;
   return texture2D(uBgTex, uv).rgb;
 }
 
-vec3 sampleBgBlurred(vec2 uv, float radius) {
-  if (radius < 0.5) return sampleBg(uv);
+vec3 sampleBgBlurred(vec2 screenPx, float radius) {
+  if (radius < 0.5) return sampleBg(screenPx);
   vec3 sum = vec3(0.0);
-  vec2 px = 1.0 / uResolution;
   vec2 offsets[16];
   offsets[0]  = vec2(-0.94201, -0.39906);
   offsets[1]  = vec2( 0.94558, -0.76890);
@@ -62,7 +66,7 @@ vec3 sampleBgBlurred(vec2 uv, float radius) {
   offsets[14] = vec2(-0.32490, -0.03965);
   offsets[15] = vec2(-0.60975,  0.06566);
   for (int i = 0; i < 16; i++) {
-    sum += sampleBg(uv + offsets[i] * radius * px);
+    sum += sampleBg(screenPx + offsets[i] * radius);
   }
   return sum / 16.0;
 }
@@ -72,7 +76,12 @@ void main() {
   vec2 p = screenPx - uGlassCenter;
   vec2 halfSize = uGlassSize * 0.5;
 
-  float sd = sdRoundedRect(p, halfSize, uRadius);
+  // Koordináta-rendszer forgatása a glass lokális terébe
+  float cosA = cos(-uRotation);
+  float sinA = sin(-uRotation);
+  vec2 pLocal = vec2(cosA * p.x - sinA * p.y, sinA * p.x + cosA * p.y);
+
+  float sd = sdRoundedRect(pLocal, halfSize, uRadius);
 
   if (sd > 0.0) {
     float shadowFalloff = exp(-sd * sd / 800.0);
@@ -96,21 +105,24 @@ void main() {
   float thetaR = asin(sinR);
   float displacement = h * uThickness * (tan(slopeAngle) - tan(thetaR));
 
+  // Gradiens kiszámítása a lokális (forgatott) térben
   vec2 grad;
   float eps = 0.5;
-  grad.x = sdRoundedRect(p + vec2(eps, 0.0), halfSize, uRadius) - sd;
-  grad.y = sdRoundedRect(p + vec2(0.0, eps), halfSize, uRadius) - sd;
+  grad.x = sdRoundedRect(pLocal + vec2(eps, 0.0), halfSize, uRadius) - sd;
+  grad.y = sdRoundedRect(pLocal + vec2(0.0, eps), halfSize, uRadius) - sd;
   grad = normalize(grad);
 
-  vec2 offset = -grad * displacement / uResolution;
+  // Gradiens visszaforgatása képernyő-térbe
+  float cosB = cos(uRotation);
+  float sinB = sin(uRotation);
+  vec2 gradScreen = vec2(cosB * grad.x - sinB * grad.y, sinB * grad.x + cosB * grad.y);
 
-  vec2 screenUV = screenPx / uResolution;
-  vec2 refractedUV = screenUV + offset;
+  vec2 refractedPx = screenPx - gradScreen * displacement;
 
-  vec3 color = sampleBgBlurred(refractedUV, uBlur);
+  vec3 color = sampleBgBlurred(refractedPx, uBlur);
 
   vec2 lightDir = normalize(vec2(0.5, -0.7));
-  float rimDot = abs(dot(grad, lightDir));
+  float rimDot = abs(dot(gradScreen, lightDir));
   float rimFalloff = 1.0 - smoothstep(0.0, bezel * 0.4, distFromEdge);
   float specHighlight = pow(rimDot * rimFalloff, 1.5);
   color += vec3(specHighlight * uSpecular);

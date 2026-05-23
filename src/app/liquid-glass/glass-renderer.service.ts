@@ -14,6 +14,7 @@ export class GlassRendererService {
   private initialized = false;
   private bgTexture: THREE.Texture | null = null;
   private bgAspect = 1.5;
+  private bgSourceEl: HTMLElement | null = null;
 
   constructor(private ngZone: NgZone) {}
 
@@ -58,15 +59,46 @@ export class GlassRendererService {
         uSpecular:    { value: state.spec },
         uTint:        { value: state.tint },
         uShadow:      { value: state.shadow },
+        uRotation:    { value: (state.rotation ?? 0) * Math.PI / 180 },
         uBgTex:       { value: this.bgTexture },
         uBgAspect:    { value: this.bgAspect },
+        uBgRect:      { value: new THREE.Vector4(0, 0, window.innerWidth, window.innerHeight) },
       },
       transparent: true,
       depthTest: false,
     });
 
     this.scene.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), material));
+    this.updateBgRectUniforms();
     return material;
+  }
+
+  setBgSourceElement(el: HTMLElement | null): void {
+    this.bgSourceEl = el;
+    this.updateBgRectUniforms();
+
+    if (!el) return;
+    const bgImage = getComputedStyle(el).backgroundImage;
+    const match = bgImage.match(/url\((['\"]?)(.*?)\1\)/);
+    const imageUrl = match?.[2];
+    if (imageUrl) {
+      this.loadBgTexture(imageUrl);
+    }
+  }
+
+  private updateBgRectUniforms(): void {
+    const rect = this.bgSourceEl?.getBoundingClientRect();
+    const x = rect?.left ?? 0;
+    const y = rect?.top ?? 0;
+    const w = rect?.width ?? window.innerWidth;
+    const h = rect?.height ?? window.innerHeight;
+
+    this.scene?.children.forEach((child) => {
+      const mat = (child as THREE.Mesh).material as THREE.ShaderMaterial;
+      if (mat?.uniforms?.['uBgRect']) {
+        mat.uniforms['uBgRect'].value.set(x, y, w, h);
+      }
+    });
   }
 
   /** Törli a glass ablakot a scene-ből */
@@ -89,7 +121,7 @@ export class GlassRendererService {
       tex.magFilter = THREE.LinearFilter;
       this.bgTexture = tex;
       this.bgAspect = tex.image.width / tex.image.height;
-
+      
       this.scene.children.forEach((child) => {
         const mat = (child as THREE.Mesh).material as THREE.ShaderMaterial;
         if (mat?.uniforms?.['uBgTex']) {
@@ -105,6 +137,7 @@ export class GlassRendererService {
 
   private renderLoop(): void {
     this.animFrameId = requestAnimationFrame(() => this.renderLoop());
+    this.updateBgRectUniforms();
     this.syncCallbacks.forEach(fn => fn());
     this.renderer.render(this.scene, this.camera);
   }

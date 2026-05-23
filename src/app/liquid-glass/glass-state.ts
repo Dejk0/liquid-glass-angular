@@ -11,6 +11,8 @@ export interface GlassState {
   spec: number;
   tint: number;
   shadow: number;
+  /** Forgás fokban (pl. 30 = 30°). A shader kezeli, CSS transform nem szükséges. */
+  rotation: number;
 }
 
 export const DEFAULT_STATE: GlassState = {
@@ -26,4 +28,5 @@ export const DEFAULT_STATE: GlassState = {
   spec: 0.55,
   tint: 0.08,
   shadow: 0.1,
+  rotation: 0,
 };
